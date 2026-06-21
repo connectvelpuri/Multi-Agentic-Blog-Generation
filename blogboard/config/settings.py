@@ -30,8 +30,8 @@ class ContentAPISettings(BaseModel):
 class Settings(BaseSettings):
     llm: LLMSettings
     tags: TagSettings = Field(default_factory=TagSettings)
-    r2: R2Settings
-    content: ContentAPISettings
+    r2: R2Settings = Field(default_factory=R2Settings)
+    content: ContentAPISettings = Field(default_factory=ContentAPISettings)
 
     model_config = SettingsConfigDict(
         env_file=".env",
