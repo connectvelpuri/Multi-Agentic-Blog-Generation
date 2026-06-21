@@ -1,22 +1,21 @@
-name: BlogBoard Daily — Trending Topics & Gap Filler
+name: BlogBoard Daily Generator
 
-on:
+"on":
   schedule:
-    - cron: '0 6 * * *'   # Daily tutorial at 6 AM UTC
-    - cron: '0 12 * * *'  # Daily AI News at 12 PM UTC
+    - cron: '0 6 * * *'
+    - cron: '0 12 * * *'
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Generation mode'
+        description: Generation mode
         required: true
-        default: 'auto'
+        default: auto
         type: choice
         options:
-          - auto          # Pick domain with oldest content (gap filler)
-          - tutorial      # Generate a tutorial article
-          - ainews        # Generate an AI News article
-          - trending      # Research trending topics first, then write
-          - fill-all      # Generate one article for EVERY empty domain
+          - auto
+          - tutorial
+          - ainews
+          - fill-all
 
 permissions:
   contents: read
@@ -28,91 +27,51 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  analyze-and-generate:
+  generate-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      
-      - name: Install uv and deps
+
+      - name: Install dependencies
         run: |
           pip install uv
           uv sync
-      
-      - name: Analyze content gaps
-        id: gaps
-        run: |
-          echo "=== Current Content ==="
-          for cat in ml dl nlp cv genai ainews; do
-            dir="blogboard/web/blogs/$cat"
-            count=$(find "$dir" -name "*.md" 2>/dev/null | wc -l)
-            echo "$cat: $count articles"
-          done
-          # Find which domain has the oldest content
-          python -c "
-import json, os, glob
-oldest = None
-oldest_date = '9999-99-99'
-for cat in ['ml','dl','nlp','cv','genai','statistics','ainews']:
-    path = f'blogboard/web/blogs/{cat}/articles.json'
-    if os.path.exists(path):
-        try:
-            with open(path) as f:
-                data = json.load(f)
-            if data:
-                dates = [a.get('date','') for a in data if a.get('date')]
-                if dates:
-                    local_min = min(dates)
-                    if local_min < oldest_date:
-                        oldest_date = local_min
-                        oldest = cat
-                else:
-                    oldest = cat if oldest is None else oldest
-            else:
-                oldest = cat if oldest is None else oldest
-        except:
-            oldest = cat if oldest is None else oldest
-    else:
-        oldest = cat if oldest is None else oldest
-print(f'oldest_domain={oldest}')
-" >> $GITHUB_OUTPUT
-      
-      - name: Research trending AI topics
-        if: ${{ github.event.inputs.mode == 'trending' || github.event.inputs.mode == '' }}
-        run: |
-          echo "🌐 Researching trending AI topics..."
-          # Use the LLM to research what's trending (no API key needed for research mode)
-          # This just prints what we'll focus on
-          echo "mode=trending" >> $GITHUB_OUTPUT
-      
-      - name: Generate tutorial article (auto mode)
-        if: ${{ github.event.inputs.mode == 'auto' || github.event.inputs.mode == 'tutorial' || github.event.inputs.mode == '' }}
+
+      - name: Auto mode - generate tutorial
+        if: ${{ github.event.inputs.mode == 'auto' || github.event.inputs.mode == '' || github.event_name == 'schedule' }}
         run: uv run python blogboard/run.py
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      
-      - name: Generate AI News article
-        if: ${{ github.event.inputs.mode == 'ainews' || github.event.inputs.mode == 'trending' }}
+
+      - name: Tutorial mode
+        if: ${{ github.event.inputs.mode == 'tutorial' }}
+        run: uv run python blogboard/run.py
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+      - name: AI News mode
+        if: ${{ github.event.inputs.mode == 'ainews' }}
         run: uv run python blogboard/run.py --ainews
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      
-      - name: Fill ALL empty domains (fill-all mode)
+
+      - name: Fill-all mode (generate for empty domains)
         if: ${{ github.event.inputs.mode == 'fill-all' }}
         run: |
-          for i in 1 2 3 4; do
-            echo "=== Generating article $i ==="
-            uv run python blogboard/run.py
-          done
+          uv run python blogboard/run.py
+          uv run python blogboard/run.py
+          uv run python blogboard/run.py
+          uv run python blogboard/run.py
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: blogboard/web
-      
+
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
