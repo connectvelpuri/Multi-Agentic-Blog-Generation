@@ -1,21 +1,58 @@
-name: BlogBoard Auto-Generate
+name: BlogBoard Auto-Generate & Deploy
+
 on:
   schedule:
     - cron: '0 6 * * *'   # Daily at 6 AM UTC
-  workflow_dispatch:       # Manual trigger too
+  workflow_dispatch:       # Manual trigger
+  push:
+    branches: [main]
+    paths:
+      - 'blogboard/web/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   generate:
     runs-on: ubuntu-latest
+    outputs:
+      has_new_content: ${{ steps.check.outputs.has_new_content }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - run: pip install uv && uv sync
-      - run: python blogboard/run.py
+      - name: Install deps
+        run: |
+          pip install uv
+          uv sync
+      - name: Check for new content
+        id: check
+        run: echo "has_new_content=true" >> $GITHUB_OUTPUT
+      - name: Generate blog article
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+        run: python blogboard/run.py
         env:
           llm__api_key: ${{ secrets.GROQ_API_KEY }}
-      - uses: actions/upload-pages-artifact@v3
+          content__tavily_api_key: ${{ secrets.TAVILY_API_KEY }}
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: blogboard/web
+
+  deploy:
+    needs: generate
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
