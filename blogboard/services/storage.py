@@ -144,7 +144,7 @@ class R2StorageService:
         for domain_slug in app_settings.tags.model_dump().keys():
             articles = self.get_articles_json(domain_slug)
             if not articles:
-                latest_dates[domain_slug] = "Never"
+                latest_dates[domain_slug] = "0000-00-00"
             else:
                 sorted_articles = sorted(
                     articles, key=lambda x: x.get("date", ""), reverse=True
