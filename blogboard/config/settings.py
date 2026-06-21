@@ -17,15 +17,15 @@ class TagSettings(BaseModel):
     ainews: Dict[str, str] = {"label": "AI News", "shortLabel": "AI News"}
 
 class R2Settings(BaseModel):
-    ACCOUNT_ID: str
-    ACCESS_KEY_ID: str
-    SECRET_ACCESS_KEY: str
-    BUCKET_NAME: str
+    ACCOUNT_ID: str = ""
+    ACCESS_KEY_ID: str = ""
+    SECRET_ACCESS_KEY: str = ""
+    BUCKET_NAME: str = ""
 
 class ContentAPISettings(BaseModel):
     TAVILY_API_KEY: str = ""
-    GUARDIAN_API_KEY: str
-    UNSPLASH_API_KEY: str
+    GUARDIAN_API_KEY: str = ""
+    UNSPLASH_API_KEY: str = ""
 
 class Settings(BaseSettings):
     llm: LLMSettings
