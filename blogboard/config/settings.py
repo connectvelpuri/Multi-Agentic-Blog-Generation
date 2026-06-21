@@ -23,7 +23,7 @@ class R2Settings(BaseModel):
     BUCKET_NAME: str
 
 class ContentAPISettings(BaseModel):
-    TAVILY_API_KEY: str
+    TAVILY_API_KEY: str = ""
     GUARDIAN_API_KEY: str
     UNSPLASH_API_KEY: str
 

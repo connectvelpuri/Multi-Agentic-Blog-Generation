@@ -4,7 +4,7 @@ from langchain_core.tools import BaseTool
 from langgraph.prebuilt import create_react_agent
 
 from blogboard.config.settings import app_settings
-from blogboard.tools import TavilySearchTool, GuardianSearchTool
+from blogboard.tools import DuckDuckGoSearchTool, GuardianSearchTool
 
 
 class LLMAgentService:
@@ -56,7 +56,7 @@ class LLMAgentService:
         """
         # Step 1: Initialize the tools designed for the News Agent
         news_tools: List[BaseTool] = [
-            TavilySearchTool(),
+            DuckDuckGoSearchTool(),
             GuardianSearchTool()
         ]
         
