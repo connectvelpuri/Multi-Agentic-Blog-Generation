@@ -1,0 +1,34 @@
+{
+  "name": "BlogBoard - Multi-Agent Blog Generator",
+  "image": "mcr.microsoft.com/devcontainers/python:3.13",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.13",
+      "installTools": true
+    }
+  },
+  "postCreateCommand": "pip install uv && uv sync",
+  "postStartCommand": "echo 'BlogBoard ready. Run: python blogboard/run.py'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "GitHub.copilot"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": ".venv/bin/python",
+        "python.terminal.activateEnvironment": true
+      }
+    }
+  },
+  "forwardPorts": [
+    8000
+  ],
+  "portsAttributes": {
+    "8000": {
+      "label": "Blog Frontend",
+      "onAutoForward": "openPreview"
+    }
+  }
+}
